@@ -2,14 +2,14 @@
 #include <stdio.h>
 #include <string.h>
 
-#define FALSE 1
-#define TRUE 0
+#define FALSE 0
+#define TRUE 1
 
 #define MAX_LINE_LENGTH 50
 #define WIDTH 20
 #define HEIGHT 20
-#define MINE 255
-#define UNEXPLORED 254
+#define MINE 9
+#define UNEXPLORED 10
 
 void playGame(void);
 void printBoard(int);
@@ -21,6 +21,7 @@ void clearBoard(void);
 void inputMines(void);
 int  hasWon(void);
 
+char buf[MAX_LINE_LENGTH];
 char board[HEIGHT][WIDTH];
 char lastPos[2];
 
@@ -38,7 +39,7 @@ void playGame(void) {
     printBoard(FALSE);
     fgets(buf, MAX_LINE_LENGTH, stdin);
     if (buf == NULL || !inputPos(buf)) {
-      printf("(%d, %d) is not a valid position.", lastPos[0], lastPos[1]);
+      printf("(%d, %d) is not a valid position.\n", lastPos[0], lastPos[1]);
       continue;
     }
 
@@ -50,16 +51,16 @@ void playGame(void) {
       if (numSur == 0)
 	floodFill(lastPos[0], lastPos[1]);
     } else {
-      printf("(%d, %d) has already been revealed", lastPos[0], lastPos[1]);
+      printf("(%d, %d) has already been revealed\n", lastPos[0], lastPos[1]);
     }
   }
 
   printBoard(TRUE);
 
   if (hitMine) {
-    printf("You Lost!");
+    printf("You Lost!\n");
   } else {
-    printf("You Won!");
+    printf("You Won!\n");
   }
 }
 
@@ -93,7 +94,8 @@ void floodFill(char row, char col) {
 
   for (short i = -1; i <= 1; i++)
     for (short j = -1; j <= 1; j++)
-      if (validPos(i + row, j + col) && i != 0 && j != 0)
+      if (validPos(i + row, j + col) && !(i == 0 && j == 0) &&
+	  board[i + row][j + col] == UNEXPLORED)
 	floodFill(i + row, j + col);
 }
 char countSur(char row, char col) {
@@ -101,8 +103,9 @@ char countSur(char row, char col) {
 
   for (short i = -1; i <= 1; i++)
     for (short j = -1; j <= 1; j++)
-      if (validPos(i + row, j + col) && board[i + row][j + col] == MINE)
-	count++;
+      if (validPos(i + row, j + col))
+	if (board[i + row][j + col] == MINE)
+	  count++;
 
   return count;
 }
@@ -116,19 +119,22 @@ int validPos(char row, char col) {
 
 int inputPos(char *str) {
     char *nums = strtok(str, ",");
-    if (nums == NULL)
+    if (nums == NULL) {
+      printf("strtok1\n");
       return FALSE;
-
+    }
     lastPos[0] = atoi(nums);
     nums = strtok(NULL, ",");
-    if (nums == NULL)
+    if (nums == NULL) {
+      printf("strtok2\n");
       return FALSE;
-
+    }
     lastPos[1] = atoi(nums);
     if (lastPos[0] < 0 || lastPos[0] >= HEIGHT ||
-	lastPos[1] < 0 || lastPos[1] >= WIDTH)
+	lastPos[1] < 0 || lastPos[1] >= WIDTH) {
+      printf("inputPos(char) (%d, %d)\n", lastPos[0], lastPos[1]); 
       return FALSE;
-
+    }
     return TRUE;
 }
 
@@ -142,26 +148,25 @@ void clearBoard(void) {
 
 void inputMines(void) {
   int mineCount = 0;
-  scanf("%d", &mineCount);
-
+  fgets(buf, MAX_LINE_LENGTH, stdin);
+  mineCount = atoi(buf);
   if (mineCount < 0) {
-    printf("Number of mines cannot be negative.");
+    printf("Number of mines cannot be negative.\n");
     exit(EXIT_FAILURE);
   }
   
   char i = 0;
-  char buf[MAX_LINE_LENGTH];
   for (; i < mineCount && fgets(buf, MAX_LINE_LENGTH, stdin) != NULL; i++) {
-    if (!inputPos(buf) || board[lastPos[0]][lastPos[1]] == MINE) {
-      printf("(%d, %d) is not a valid position for a mine.",
-	     lastPos[0], lastPos[1]);
-    } else {
+    if (inputPos(buf) && board[lastPos[0]][lastPos[1]] != MINE) {
       board[lastPos[0]][lastPos[1]] = MINE;
+    } else {
+      printf("1(%d, %d) is not a valid position for a mine.\n",
+	     lastPos[0], lastPos[1]);
     }
   }
 
   if (i != mineCount) {
-    printf("Not enough mines placed on the board.");
+    printf("Not enough mines placed on the board.\n");
     exit(EXIT_FAILURE);
   }
 }
